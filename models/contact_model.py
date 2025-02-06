@@ -6,4 +6,4 @@ class Contact(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, index=True)
-    contact_no = Column(String)
+    contact_no = Column(Integer, unique=True, index=True)
