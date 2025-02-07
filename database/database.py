@@ -11,7 +11,10 @@ encoded_password = quote_plus(os.getenv('DB_PASSWORD'))
 
 DATABASE_URL = f"mysql+mysqlconnector://{os.getenv('DB_USERNAME')}:{encoded_password}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_DATABASE')}"
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+try:
+    engine = create_engine(DATABASE_URL)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+except Exception as e:
+    print(f"Database connection failed: {str(e)}")
 
 Base = declarative_base()
