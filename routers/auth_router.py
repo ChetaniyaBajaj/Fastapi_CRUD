@@ -9,7 +9,7 @@ from services.auth_service import create_access_token, get_password_hash, verify
 router = APIRouter()
 
 # User Registration
-@router.post("/auth/register", response_model=UserResponse)
+@router.post("/Register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
@@ -23,7 +23,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 # User Login
-@router.post("/auth/login")
+@router.post("/Login")
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password):
