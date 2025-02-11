@@ -5,11 +5,10 @@ from schemas.contact_schema import ContactCreate
 
 PAGE_SIZE = 5 
 
-def get_contacts(db: Session, name=None, contact_no=None, contact_id=None, page=1):
+def get_contacts(db: Session, name=None, contact_no=None, contact_id=None, page=1, username=None):
     try:
-        query = db.query(Contact)
+        query = db.query(Contact).filter(Contact.username == username)
 
-        # Apply filters if provided
         if name:
             query = query.filter(Contact.name == name)
         if contact_no:
@@ -18,7 +17,7 @@ def get_contacts(db: Session, name=None, contact_no=None, contact_id=None, page=
             query = query.filter(Contact.id == contact_id)
 
         total_contacts = query.count()
-        total_pages = (total_contacts + PAGE_SIZE - 1) // PAGE_SIZE  # Compute total pages
+        total_pages = (total_contacts + PAGE_SIZE - 1) // PAGE_SIZE  
 
         if total_contacts == 0:
             raise HTTPException(status_code=404, detail="No contacts found.")
@@ -26,15 +25,15 @@ def get_contacts(db: Session, name=None, contact_no=None, contact_id=None, page=
         if page > total_pages:
             raise HTTPException(status_code=400, detail=f"Invalid page number. Only {total_pages} pages available.")
 
-        skip = (page - 1) * PAGE_SIZE  # Convert page number to offset
+        skip = (page - 1) * PAGE_SIZE  
         return query.offset(skip).limit(PAGE_SIZE).all()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving contact: {str(e)}")
 
 
-def create_contact(db: Session, contact: ContactCreate):
+def create_contact(db: Session, contact: ContactCreate, username: str):
     try:
-        db_contact = Contact(name=contact.name, contact_no=contact.contact_no)
+        db_contact = Contact(name=contact.name, contact_no=contact.contact_no, username=username)
         db.add(db_contact)
         db.commit()
         db.refresh(db_contact)
@@ -44,9 +43,9 @@ def create_contact(db: Session, contact: ContactCreate):
         raise HTTPException(status_code=400, detail=f"Error creating contact: {str(e)}")
 
 
-def update_contact(db: Session, contact_id: int, name: str = None, contact_no: int = None):
+def update_contact(db: Session, contact_id: int, name: str = None, contact_no: int = None, username: str = None):
     try:    
-        contact = db.query(Contact).filter(Contact.id == contact_id).first()
+        contact = db.query(Contact).filter(Contact.id == contact_id, Contact.username == username).first()
         
         if contact:
             if name:
@@ -55,35 +54,25 @@ def update_contact(db: Session, contact_id: int, name: str = None, contact_no: i
                 contact.contact_no = contact_no
             db.commit()
             db.refresh(contact)
+        else:
+            raise HTTPException(status_code=404, detail="Contact not found or unauthorized.")
+        
         return contact
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error updating contact: {str(e)}")
 
 
-def delete_contact(db: Session, contact_id: int):
+def delete_contact(db: Session, contact_id: int, username: str):
     try:
-        contact = db.query(Contact).filter(Contact.id == contact_id).first()
+        contact = db.query(Contact).filter(Contact.id == contact_id, Contact.username == username).first()
         if contact:
             db.delete(contact)
             db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Contact not found or unauthorized.")
+
         return contact
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error deleting contact: {str(e)}")
-
-
-def get_contacts_count(db: Session, name=None, contact_no=None, contact_id=None):
-    try:
-        query = db.query(Contact)
-        
-        if name:
-            query = query.filter(Contact.name == name)
-        if contact_no:
-            query = query.filter(Contact.contact_no == contact_no)
-        if contact_id:
-            query = query.filter(Contact.id == contact_id)
-        
-        return query.count() 
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error fetching contacts count: {str(e)}")
